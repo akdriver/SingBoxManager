@@ -36,8 +36,19 @@ if (-not (Test-Path $WebView2ExtractDir)) {
   Expand-Archive -Path $WebView2Package -DestinationPath $WebView2ExtractDir -Force
 }
 
-Copy-Item (Join-Path $WebView2ExtractDir "lib\net462\Microsoft.Web.WebView2.Core.dll") $Root -Force
-Copy-Item (Join-Path $WebView2ExtractDir "lib\net462\Microsoft.Web.WebView2.WinForms.dll") $Root -Force
+$WebView2LibDir = Join-Path $WebView2ExtractDir "lib\net45"
+if (-not (Test-Path $WebView2LibDir)) {
+  $WebView2LibDir = Get-ChildItem (Join-Path $WebView2ExtractDir "lib") -Directory |
+    Where-Object { Test-Path (Join-Path $_.FullName "Microsoft.Web.WebView2.WinForms.dll") } |
+    Select-Object -First 1 -ExpandProperty FullName
+}
+
+if (-not $WebView2LibDir) {
+  throw "Microsoft.Web.WebView2 assemblies were not found in the downloaded package."
+}
+
+Copy-Item (Join-Path $WebView2LibDir "Microsoft.Web.WebView2.Core.dll") $Root -Force
+Copy-Item (Join-Path $WebView2LibDir "Microsoft.Web.WebView2.WinForms.dll") $Root -Force
 Copy-Item (Join-Path $WebView2ExtractDir "runtimes\win-x64\native\WebView2Loader.dll") $Root -Force
 
 $SingBoxZip = Join-Path $DepsDir "sing-box-$SingBoxVersion-windows-amd64.zip"
