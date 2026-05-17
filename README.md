@@ -5,6 +5,7 @@ A lightweight Windows manager for running `sing-box` and opening the local dashb
 ## Features
 
 - Import and switch sing-box JSON configurations
+- Import and update sing-box JSON configurations from a URL
 - Show `external_controller`, UI port, and `secret`
 - Copy dashboard secret to clipboard
 - Start, stop, and restart the sing-box core
@@ -14,6 +15,8 @@ A lightweight Windows manager for running `sing-box` and opening the local dashb
 ## Privacy
 
 Do not commit your personal `config.json`, `profiles/`, `cache.db`, or logs. These files may contain proxy nodes, passwords, tokens, or runtime state. They are ignored by `.gitignore`.
+
+URL configuration sources are stored under `profiles/` together with the last update timestamp, so they are treated as private runtime data too.
 
 ## Runtime Files
 
@@ -26,6 +29,12 @@ For a portable release package, place these files beside `SingBoxManager.exe`:
 - `WebView2Loader.dll`
 
 Users also need Microsoft Edge WebView2 Runtime installed. Most Windows 10/11 systems already include it.
+
+## URL Config Updates
+
+On the config page, paste a direct `http` or `https` URL to a sing-box JSON config and click **下载导入**. The app downloads the file, validates it with `sing-box check`, confirms the local dashboard port is present, then replaces `config.json`.
+
+After a successful URL import, click **更新** to download from the saved URL again. The config page shows the last successful update time.
 
 ## Build
 

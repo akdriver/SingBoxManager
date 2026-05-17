@@ -28,6 +28,8 @@ internal sealed class MainForm : Form
     private readonly string singBoxExe;
     private readonly string configFile;
     private readonly string profilesDir;
+    private readonly string subscriptionUrlFile;
+    private readonly string subscriptionLastUpdatedFile;
 
     private Panel sidebar;
     private Panel contentPanel;
@@ -46,6 +48,8 @@ internal sealed class MainForm : Form
     private Button refreshButton;
     private Button logButton;
     private Button configSelectorButton;
+    private TextBox subscriptionUrlTextBox;
+    private Label subscriptionLastUpdatedLabel;
     private ConfigPopupForm configPopup;
     private ConfigItem selectedConfigItem;
     private Label coreStateValueLabel;
@@ -68,6 +72,8 @@ internal sealed class MainForm : Form
         singBoxExe = Path.Combine(baseDir, "sing-box.exe");
         configFile = Path.Combine(baseDir, "config.json");
         profilesDir = Path.Combine(baseDir, "profiles");
+        subscriptionUrlFile = Path.Combine(profilesDir, "config-url.txt");
+        subscriptionLastUpdatedFile = Path.Combine(profilesDir, "config-url-updated.txt");
         Theme.SetDark(IsSystemDarkMode());
         BuildWindow();
         Shown += delegate { Initialize(); };
@@ -366,7 +372,7 @@ internal sealed class MainForm : Form
         var canvas = new Panel
         {
             Width = 620,
-            Height = 500,
+            Height = 660,
             Anchor = AnchorStyles.None,
             BackColor = Theme.Window
         };
@@ -510,6 +516,57 @@ internal sealed class MainForm : Form
             }
         };
         configCard.Controls.Add(copySecretButton);
+
+        var urlCard = new RoundedPanel
+        {
+            Radius = 18,
+            BackColor = Theme.Card,
+            Left = 0,
+            Top = 486,
+            Width = 620,
+            Height = 158
+        };
+        canvas.Controls.Add(urlCard);
+
+        var urlTitle = CreateCardTitle("URL 配置更新");
+        urlTitle.Left = 26;
+        urlTitle.Top = 22;
+        urlCard.Controls.Add(urlTitle);
+
+        var urlDesc = CreateMutedLabel("从 URL 下载配置并导入，之后可一键更新。");
+        urlDesc.Left = 26;
+        urlDesc.Top = 54;
+        urlDesc.Width = 540;
+        urlCard.Controls.Add(urlDesc);
+
+        subscriptionUrlTextBox = CreateInputBox(GetSubscriptionUrl());
+        subscriptionUrlTextBox.Left = 26;
+        subscriptionUrlTextBox.Top = 84;
+        subscriptionUrlTextBox.Width = 360;
+        subscriptionUrlTextBox.Height = 34;
+        urlCard.Controls.Add(subscriptionUrlTextBox);
+
+        var importUrlButton = CreatePrimaryButton("下载导入");
+        importUrlButton.Left = 398;
+        importUrlButton.Top = 80;
+        importUrlButton.Width = 96;
+        importUrlButton.Height = 38;
+        importUrlButton.Click += async delegate { await ImportConfigFromUrlAsync(false); };
+        urlCard.Controls.Add(importUrlButton);
+
+        var updateUrlButton = CreateFlatButton("更新");
+        updateUrlButton.Left = 506;
+        updateUrlButton.Top = 80;
+        updateUrlButton.Width = 88;
+        updateUrlButton.Height = 38;
+        updateUrlButton.Click += async delegate { await ImportConfigFromUrlAsync(true); };
+        urlCard.Controls.Add(updateUrlButton);
+
+        subscriptionLastUpdatedLabel = CreateMutedLabel("上次更新: " + GetSubscriptionLastUpdatedDisplay());
+        subscriptionLastUpdatedLabel.Left = 26;
+        subscriptionLastUpdatedLabel.Top = 126;
+        subscriptionLastUpdatedLabel.Width = 540;
+        urlCard.Controls.Add(subscriptionLastUpdatedLabel);
     }
 
     private void ShowCorePage(string title, string body)
@@ -650,6 +707,73 @@ internal sealed class MainForm : Form
             {
                 RestoreBackup(backup);
                 ShowConfigPage("导入失败", ex.Message);
+            }
+        }
+    }
+
+    private async Task ImportConfigFromUrlAsync(bool useSavedUrl)
+    {
+        string url = useSavedUrl ? GetSubscriptionUrl() : (subscriptionUrlTextBox != null ? subscriptionUrlTextBox.Text.Trim() : "");
+        Uri uri;
+        if (string.IsNullOrWhiteSpace(url) ||
+            !Uri.TryCreate(url, UriKind.Absolute, out uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            ShowConfigPage("URL 无效", "请输入 http 或 https 开头的配置文件 URL。");
+            return;
+        }
+
+        ShowLoadingScreen("正在从 URL 下载并校验配置...");
+        string backup = null;
+        string downloadedConfig = Path.Combine(baseDir, "config.download." + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json");
+
+        try
+        {
+            backup = BackupConfig();
+
+            using (var client = new WebClient())
+            {
+                client.Headers[HttpRequestHeader.UserAgent] = "SingBoxManager/1.0";
+                await client.DownloadFileTaskAsync(uri, downloadedConfig);
+            }
+
+            File.Copy(downloadedConfig, configFile, true);
+
+            string checkOutput;
+            if (!RunSingBoxCheck(out checkOutput))
+            {
+                RestoreBackup(backup);
+                ShowConfigPage("配置校验失败", TrimOutput(checkOutput));
+                return;
+            }
+
+            if (!HasControllerPort(configFile))
+            {
+                RestoreBackup(backup);
+                ShowConfigPage("配置缺少面板端口", "请导入包含 external_controller 9095 的配置文件。");
+                return;
+            }
+
+            SaveSubscriptionInfo(url);
+            SaveUrlProfileCopy();
+            ShowConfigPage("URL 配置已更新", "配置已下载并通过校验。上次更新时间已保存。");
+        }
+        catch (Exception ex)
+        {
+            RestoreBackup(backup);
+            ShowConfigPage("URL 更新失败", ex.Message);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(downloadedConfig))
+                {
+                    File.Delete(downloadedConfig);
+                }
+            }
+            catch
+            {
             }
         }
     }
@@ -977,6 +1101,46 @@ internal sealed class MainForm : Form
         }
 
         File.Copy(configFile, target, true);
+    }
+
+    private void SaveUrlProfileCopy()
+    {
+        Directory.CreateDirectory(profilesDir);
+        File.Copy(configFile, Path.Combine(profilesDir, "url-config.json"), true);
+    }
+
+    private string GetSubscriptionUrl()
+    {
+        if (!File.Exists(subscriptionUrlFile))
+        {
+            return "";
+        }
+
+        return File.ReadAllText(subscriptionUrlFile).Trim();
+    }
+
+    private void SaveSubscriptionInfo(string url)
+    {
+        Directory.CreateDirectory(profilesDir);
+        File.WriteAllText(subscriptionUrlFile, url.Trim());
+        File.WriteAllText(subscriptionLastUpdatedFile, DateTime.Now.ToString("o"));
+    }
+
+    private string GetSubscriptionLastUpdatedDisplay()
+    {
+        if (!File.Exists(subscriptionLastUpdatedFile))
+        {
+            return "从未更新";
+        }
+
+        DateTime updatedAt;
+        string text = File.ReadAllText(subscriptionLastUpdatedFile).Trim();
+        if (!DateTime.TryParse(text, out updatedAt))
+        {
+            return text;
+        }
+
+        return updatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
     }
 
     private void RefreshConfigSelector()
@@ -1558,6 +1722,19 @@ internal sealed class MainForm : Form
             Radius = 12,
             Font = new Font("Microsoft YaHei UI", 10F),
             Cursor = Cursors.Hand
+        };
+    }
+
+    private static TextBox CreateInputBox(string text)
+    {
+        return new TextBox
+        {
+            Text = text,
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Theme.CardAlt,
+            ForeColor = Theme.Text,
+            Font = new Font("Microsoft YaHei UI", 10F),
+            Multiline = false
         };
     }
 }
