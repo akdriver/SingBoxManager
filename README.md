@@ -29,10 +29,18 @@ Users also need Microsoft Edge WebView2 Runtime installed. Most Windows 10/11 sy
 
 ## Build
 
-This project is currently a single-file WinForms application. On Windows with .NET Framework compiler available:
+This project is currently a single-file WinForms application. On Windows with .NET Framework compiler available, run:
 
 ```powershell
-& C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /codepage:65001 /utf8output /target:winexe /platform:x64 /win32icon:sing-box.ico /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Microsoft.Web.WebView2.Core.dll /reference:Microsoft.Web.WebView2.WinForms.dll /out:SingBoxManager.exe SingBoxManager.cs
+powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+`build.ps1` restores missing local dependencies first, then compiles `SingBoxManager.exe`.
+
+To restore dependencies without building:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\restore-deps.ps1
 ```
 
 ## Release

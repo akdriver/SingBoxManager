@@ -7,6 +7,7 @@ config.backup.*.json
 SingBoxManager.exe.WebView2/
 
 # Release/package artifacts
+.deps/
 release/
 *.zip
 *.7z

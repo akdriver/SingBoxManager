@@ -8,10 +8,6 @@ on:
 permissions:
   contents: write
 
-env:
-  SING_BOX_VERSION: 1.13.11
-  WEBVIEW2_VERSION: 1.0.2365.46
-
 jobs:
   build-release:
     name: Build Windows portable package
@@ -21,48 +17,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download dependencies
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force deps | Out-Null
-
-          nuget install Microsoft.Web.WebView2 `
-            -Version $env:WEBVIEW2_VERSION `
-            -OutputDirectory packages `
-            -NonInteractive
-
-          $webView2Package = "packages\Microsoft.Web.WebView2.$env:WEBVIEW2_VERSION"
-          Copy-Item "$webView2Package\lib\net462\Microsoft.Web.WebView2.Core.dll" deps\
-          Copy-Item "$webView2Package\lib\net462\Microsoft.Web.WebView2.WinForms.dll" deps\
-          Copy-Item "$webView2Package\runtimes\win-x64\native\WebView2Loader.dll" deps\
-
-          $singBoxZip = "deps\sing-box.zip"
-          $singBoxUrl = "https://github.com/SagerNet/sing-box/releases/download/v$($env:SING_BOX_VERSION)/sing-box-$($env:SING_BOX_VERSION)-windows-amd64.zip"
-          Invoke-WebRequest -Uri $singBoxUrl -OutFile $singBoxZip
-          Expand-Archive -Path $singBoxZip -DestinationPath deps\sing-box -Force
-
-          $singBoxExe = Get-ChildItem deps\sing-box -Recurse -Filter sing-box.exe | Select-Object -First 1
-          if (-not $singBoxExe) {
-            throw "sing-box.exe was not found in the downloaded archive."
-          }
-          Copy-Item $singBoxExe.FullName deps\
-
       - name: Build SingBoxManager
         shell: pwsh
-        run: |
-          & C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe `
-            /nologo `
-            /codepage:65001 `
-            /utf8output `
-            /target:winexe `
-            /platform:x64 `
-            /win32icon:sing-box.ico `
-            /reference:System.Windows.Forms.dll `
-            /reference:System.Drawing.dll `
-            /reference:deps\Microsoft.Web.WebView2.Core.dll `
-            /reference:deps\Microsoft.Web.WebView2.WinForms.dll `
-            /out:SingBoxManager.exe `
-            SingBoxManager.cs
+        run: .\build.ps1
 
       - name: Package portable zip
         shell: pwsh
@@ -73,11 +30,11 @@ jobs:
           New-Item -ItemType Directory -Force $packageDir | Out-Null
 
           Copy-Item SingBoxManager.exe $packageDir\
-          Copy-Item deps\sing-box.exe $packageDir\
+          Copy-Item sing-box.exe $packageDir\
           Copy-Item sing-box.ico $packageDir\
-          Copy-Item deps\Microsoft.Web.WebView2.Core.dll $packageDir\
-          Copy-Item deps\Microsoft.Web.WebView2.WinForms.dll $packageDir\
-          Copy-Item deps\WebView2Loader.dll $packageDir\
+          Copy-Item Microsoft.Web.WebView2.Core.dll $packageDir\
+          Copy-Item Microsoft.Web.WebView2.WinForms.dll $packageDir\
+          Copy-Item WebView2Loader.dll $packageDir\
           Copy-Item README.md $packageDir\
 
           Compress-Archive -Path "$packageDir\*" -DestinationPath "release\$packageName.zip" -Force
