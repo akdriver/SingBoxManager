@@ -84,8 +84,8 @@ internal sealed class MainForm : Form
     private void BuildWindow()
     {
         Text = "Sing Box Manager";
-        MinimumSize = new Size(1040, 700);
-        Size = new Size(1180, 760);
+        MinimumSize = new Size(1040, 760);
+        Size = new Size(1180, 820);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Theme.Window;
         Font = new Font("Microsoft YaHei UI", 9F);
@@ -372,7 +372,7 @@ internal sealed class MainForm : Form
         var canvas = new Panel
         {
             Width = 620,
-            Height = 660,
+            Height = 620,
             Anchor = AnchorStyles.None,
             BackColor = Theme.Window
         };
@@ -431,7 +431,7 @@ internal sealed class MainForm : Form
             Left = 0,
             Top = 108,
             Width = 620,
-            Height = 360
+            Height = 340
         };
         canvas.Controls.Add(configCard);
 
@@ -478,7 +478,7 @@ internal sealed class MainForm : Form
 
         currentConfigValueLabel = CreateMutedLabel("当前配置: " + GetCurrentConfigName());
         currentConfigValueLabel.Left = 26;
-        currentConfigValueLabel.Top = 222;
+        currentConfigValueLabel.Top = 210;
         currentConfigValueLabel.Width = 540;
         configCard.Controls.Add(currentConfigValueLabel);
 
@@ -486,25 +486,25 @@ internal sealed class MainForm : Form
 
         externalControllerValueLabel = CreateMutedLabel("控制端口: " + summary.Controller);
         externalControllerValueLabel.Left = 26;
-        externalControllerValueLabel.Top = 252;
+        externalControllerValueLabel.Top = 238;
         externalControllerValueLabel.Width = 540;
         configCard.Controls.Add(externalControllerValueLabel);
 
         externalPortValueLabel = CreateMutedLabel("UI 端口: " + summary.Port);
         externalPortValueLabel.Left = 26;
-        externalPortValueLabel.Top = 280;
+        externalPortValueLabel.Top = 264;
         externalPortValueLabel.Width = 180;
         configCard.Controls.Add(externalPortValueLabel);
 
         secretValueLabel = CreateMutedLabel("密码: " + summary.SecretDisplay);
         secretValueLabel.Left = 26;
-        secretValueLabel.Top = 308;
+        secretValueLabel.Top = 290;
         secretValueLabel.Width = 420;
         configCard.Controls.Add(secretValueLabel);
 
         var copySecretButton = CreateFlatButton("复制密码");
         copySecretButton.Left = 462;
-        copySecretButton.Top = 302;
+        copySecretButton.Top = 284;
         copySecretButton.Width = 132;
         copySecretButton.Enabled = summary.HasSecret;
         copySecretButton.Click += delegate
@@ -522,9 +522,9 @@ internal sealed class MainForm : Form
             Radius = 18,
             BackColor = Theme.Card,
             Left = 0,
-            Top = 486,
+            Top = 460,
             Width = 620,
-            Height = 158
+            Height = 150
         };
         canvas.Controls.Add(urlCard);
 
@@ -564,7 +564,7 @@ internal sealed class MainForm : Form
 
         subscriptionLastUpdatedLabel = CreateMutedLabel("上次更新: " + GetSubscriptionLastUpdatedDisplay());
         subscriptionLastUpdatedLabel.Left = 26;
-        subscriptionLastUpdatedLabel.Top = 126;
+        subscriptionLastUpdatedLabel.Top = 120;
         subscriptionLastUpdatedLabel.Width = 540;
         urlCard.Controls.Add(subscriptionLastUpdatedLabel);
     }
