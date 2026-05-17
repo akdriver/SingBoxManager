@@ -35,7 +35,17 @@ This project is currently a single-file WinForms application. On Windows with .N
 & C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /codepage:65001 /utf8output /target:winexe /platform:x64 /win32icon:sing-box.ico /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Microsoft.Web.WebView2.Core.dll /reference:Microsoft.Web.WebView2.WinForms.dll /out:SingBoxManager.exe SingBoxManager.cs
 ```
 
+## Release
+
+GitHub Actions builds and uploads a portable Windows zip when a version tag is pushed:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow downloads pinned runtime dependencies, builds `SingBoxManager.exe`, packages the portable files, and creates a GitHub Release automatically.
+
 ## Notes
 
 `sing-box` is a third-party project by SagerNet. Check its license and release terms before redistributing the core binary.
-
