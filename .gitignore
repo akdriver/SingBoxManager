@@ -1,0 +1,24 @@
+# Personal runtime configuration and generated state
+config.json
+profiles/
+cache.db
+*.log
+config.backup.*.json
+SingBoxManager.exe.WebView2/
+
+# Release/package artifacts
+*.zip
+*.7z
+*.msi
+*.nupkg
+
+# Local binaries copied for portable packaging
+sing-box.exe
+Microsoft.Web.WebView2.Core.dll
+Microsoft.Web.WebView2.WinForms.dll
+WebView2Loader.dll
+
+# Build outputs
+SingBoxManager.exe
+*.pdb
+*.obj
