@@ -22,6 +22,7 @@ if ($MissingFiles.Count -gt 0) {
   /target:winexe `
   /platform:x64 `
   /win32icon:sing-box.ico `
+  /win32manifest:app.manifest `
   /reference:System.Windows.Forms.dll `
   /reference:System.Drawing.dll `
   /reference:Microsoft.Web.WebView2.Core.dll `

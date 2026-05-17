@@ -43,6 +43,8 @@ To restore dependencies without building:
 powershell -ExecutionPolicy Bypass -File .\restore-deps.ps1
 ```
 
+The compiled app embeds `app.manifest` and requests administrator privileges at startup, so Windows shows a UAC prompt when users launch `SingBoxManager.exe`.
+
 ## Release
 
 GitHub Actions builds and uploads a portable Windows zip when a version tag is pushed:
